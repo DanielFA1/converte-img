@@ -6,6 +6,10 @@ Criei esse projeto por conta própria pra resolver exatamente isso. Roda local, 
 
 ---
 
+## Preview
+
+![Interface do conversor](example.png)
+
 ## O que faz
 
 - Converte entre **PNG, JPG, WEBP e BMP**
