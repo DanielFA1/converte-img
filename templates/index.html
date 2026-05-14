@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conversor de Imagens</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0e1117;
+      --surface: #161b27;
+      --surface2: #1c2233;
+      --border: #252d40;
+      --accent: #4f8ef7;
+      --accent-glow: #4f8ef720;
+      --text: #f0f2f7;
+      --muted: #5a6380;
+      --r: 12px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1.5rem;
+      gap: 2.5rem;
+    }
+
+    .hero { text-align: center; animation: up 0.5s ease both; }
+
+    .hero h1 {
+      font-weight: 800;
+      font-size: clamp(1.9rem, 5vw, 2.8rem);
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+
+    .hero h1 em { font-style: normal; color: var(--accent); }
+
+    .hero p { margin-top: 0.6rem; color: var(--muted); font-size: 0.88rem; }
+
+    /* CARD / FORM */
+    .card {
+      width: 100%;
+      max-width: 520px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      overflow: hidden;
+      animation: up 0.5s 0.08s ease both;
+    }
+
+    @keyframes up {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* DROP ZONE */
+    .drop {
+      position: relative;
+      padding: 2.5rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.2s;
+    }
+
+    .drop:hover, .drop.over { background: var(--surface2); }
+
+    .drop input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .drop-icon {
+      width: 44px; height: 44px;
+      margin: 0 auto 0.9rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem;
+      transition: border-color 0.2s;
+    }
+
+    .drop:hover .drop-icon, .drop.over .drop-icon { border-color: var(--accent); }
+
+    .drop h2 { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.25rem; }
+    .drop p  { font-size: 0.78rem; color: var(--muted); }
+
+    /* FILE LIST */
+    #file-list { display: none; border-bottom: 1px solid var(--border); }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+      animation: up 0.2s ease both;
+    }
+
+    .file-item:last-child { border-bottom: none; }
+
+    .file-thumb {
+      width: 36px; height: 36px;
+      object-fit: cover;
+      border-radius: 5px;
+      flex-shrink: 0;
+    }
+
+    .file-meta { flex: 1; min-width: 0; }
+
+    .file-original {
+      font-size: 0.72rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Campo de renomear */
+    .file-rename {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 0.3rem 0.5rem;
+      margin-top: 0.25rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .file-rename:focus { border-color: var(--accent); }
+
+    .file-remove {
+      background: none; border: none;
+      color: var(--muted); cursor: pointer;
+      font-size: 0.9rem; padding: 4px 6px;
+      border-radius: 5px; flex-shrink: 0;
+      transition: color 0.15s, background 0.15s;
+    }
+
+    .file-remove:hover { color: #ff6b6b; background: #ff6b6b12; }
+
+    /* CONTROLS */
+    .controls {
+      padding: 1.25rem;
+      display: flex; flex-direction: column; gap: 1.25rem;
+    }
+
+    .field-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      font-weight: 500;
+      margin-bottom: 0.6rem;
+    }
+
+    .formats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.4rem;
+    }
+
+    .fmt-btn {
+      padding: 0.55rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.76rem; font-weight: 700;
+      letter-spacing: 0.04em; color: var(--muted);
+      cursor: pointer; transition: all 0.15s;
+      text-transform: uppercase;
+    }
+
+    .fmt-btn:hover { border-color: #3a4560; color: var(--text); }
+    .fmt-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    .convert-btn {
+      width: 100%; padding: 0.9rem;
+      background: var(--accent); color: #fff; border: none;
+      border-radius: 8px; font-weight: 700;
+      font-size: 0.82rem; letter-spacing: 0.06em;
+      text-transform: uppercase; cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+
+    .convert-btn:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+    .convert-btn:disabled { opacity: 0.22; cursor: not-allowed; transform: none; }
+
+    .features {
+      width: 100%; max-width: 520px;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;
+      animation: up 0.5s 0.16s ease both;
+    }
+
+    .feat {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 1rem;
+    }
+
+    .feat-icon { font-size: 1.1rem; margin-bottom: 0.4rem; }
+    .feat h3 { font-size: 0.78rem; font-weight: 700; margin-bottom: 0.2rem; }
+    .feat p  { font-size: 0.72rem; color: var(--muted); line-height: 1.5; }
+  </style>
+</head>
+<body>
+
+<main>
+  <div class="hero">
+    <h1>Converter <em>Imagens</em><br/>localmente</h1>
+    <p>PNG, JPG, WEBP, BMP — múltiplos arquivos de uma vez.</p>
+  </div>
+
+  <form class="card" action="/converter" method="POST" enctype="multipart/form-data" id="form">
+
+    <div class="drop" id="dropzone">
+      <input type="file" id="file-input" name="imagens" accept="image/*" multiple />
+      <div class="drop-icon">🖼️</div>
+      <h2>Clique ou arraste imagens</h2>
+      <p>PNG · JPG · WEBP · BMP · GIF — múltiplos arquivos</p>
+    </div>
+
+    <div id="file-list"></div>
+
+    <div class="controls">
+
+      <div>
+        <p class="field-label">Converter para</p>
+        <div class="formats">
+          <button type="button" class="fmt-btn active" data-fmt="PNG">PNG</button>
+          <button type="button" class="fmt-btn"        data-fmt="JPEG">JPG</button>
+          <button type="button" class="fmt-btn"        data-fmt="WEBP">WEBP</button>
+          <button type="button" class="fmt-btn"        data-fmt="BMP">BMP</button>
+        </div>
+        <input type="hidden" name="formato" id="formato-input" value="PNG" />
+      </div>
+
+      <button type="submit" class="convert-btn" id="convert-btn" disabled>
+        Converter imagem
+      </button>
+
+    </div>
+  </form>
+
+  <div class="features">
+    <div class="feat">
+      <div class="feat-icon">📦</div>
+      <h3>Multi-arquivo</h3>
+      <p>Converta vários de uma vez, receba em .zip.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">✏️</div>
+      <h3>Renomear</h3>
+      <p>Escolha o nome de cada arquivo de saída.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">⚙️</div>
+      <h3>Pillow</h3>
+      <p>Conversão real no servidor com a lib Pillow.</p>
+    </div>
+  </div>
+</main>
+
+<script>
+  const dropzone    = document.getElementById('dropzone');
+  const fileInput   = document.getElementById('file-input');
+  const fileList    = document.getElementById('file-list');
+  const convertBtn  = document.getElementById('convert-btn');
+  const formatoInput= document.getElementById('formato-input');
+  const form        = document.getElementById('form');
+
+  let arquivos = [];
+
+  document.querySelectorAll('.fmt-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.fmt-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      formatoInput.value = btn.dataset.fmt;
+    });
+  });
+
+  dropzone.addEventListener('dragover',  e => { e.preventDefault(); dropzone.classList.add('over'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('over'));
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('over');
+    adicionarArquivos(e.dataTransfer.files);
+  });
+
+  fileInput.addEventListener('change', () => adicionarArquivos(fileInput.files));
+
+  function adicionarArquivos(novos) {
+    Array.from(novos)
+      .filter(f => f.type.startsWith('image/'))
+      .forEach(f => arquivos.push(f));
+    renderizarLista();
+    fileInput.value = '';
+  }
+
+  function validarNomes() {
+    const inputs = Array.from(fileList.querySelectorAll('.file-rename'));
+    const nomes = inputs.map(i => i.value.trim());
+    let valido = true;
+
+    inputs.forEach((input, i) => {
+      const duplicado = nomes.indexOf(nomes[i]) !== i;
+      input.style.borderColor = duplicado ? '#ff6b6b' : '';
+      if (duplicado) valido = false;
+    });
+
+    convertBtn.disabled = arquivos.length === 0 || !valido;
+    return valido;
+  }
+
+  function renderizarLista() {
+    fileList.innerHTML = '';
+    fileList.style.display = arquivos.length ? 'block' : 'none';
+    convertBtn.disabled = arquivos.length === 0;
+    convertBtn.textContent = arquivos.length > 1
+      ? `Converter ${arquivos.length} imagens`
+      : 'Converter imagem';
+
+    arquivos.forEach((arquivo, i) => {
+      const nome = arquivo.name.replace(/\.[^.]+$/, '');
+      const item = document.createElement('div');
+      item.className = 'file-item';
+
+      const img = document.createElement('img');
+      img.className = 'file-thumb';
+      const reader = new FileReader();
+      reader.onload = e => { img.src = e.target.result; };
+      reader.readAsDataURL(arquivo);
+
+      const meta = document.createElement('div');
+      meta.className = 'file-meta';
+
+      const original = document.createElement('div');
+      original.className = 'file-original';
+      original.textContent = arquivo.name;
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'file-rename';
+      input.name = 'nomes';
+      input.value = nome;
+      input.placeholder = 'Nome do arquivo de saída';
+      input.addEventListener('input', validarNomes);
+
+      meta.appendChild(original);
+      meta.appendChild(input);
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'file-remove';
+      removeBtn.textContent = '✕';
+      removeBtn.addEventListener('click', () => {
+        arquivos.splice(i, 1);
+        renderizarLista();
+      });
+
+      item.appendChild(img);
+      item.appendChild(meta);
+      item.appendChild(removeBtn);
+      fileList.appendChild(item);
+    });
+
+    validarNomes();
+  }
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    if (!validarNomes()) return;
+
+    const data = new FormData(form);
+    data.delete('imagens');
+    arquivos.forEach(f => data.append('imagens', f));
+
+    fetch('/converter', { method: 'POST', body: data })
+      .then(res => {
+        const disposition = res.headers.get('Content-Disposition');
+        const match = disposition && disposition.match(/filename="?([^"]+)"?/);
+        const filename = match ? match[1] : 'convertido';
+        return res.blob().then(blob => ({ blob, filename }));
+      })
+      .then(({ blob, filename }) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      });
+  });
+</script>
+</body>
+</html>
